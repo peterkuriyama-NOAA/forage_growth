@@ -11,23 +11,57 @@ library(plyr)
 library(reshape2)
 library(tidyverse)
 library(r4ss)
-# library(ggsidekick)
+library(ggsidekick)
 library(devtools)
 library(doParallel)
+
 # library(ggridges)
 # library(scales)
 options(dplyr.summarise.inform = FALSE)
 library(patchwork)
 library(cpsassessment)
 
-# devtools::install_github("https://github.com/r4ss/r4ss") 
-# devtools::install_github("peterkuriyama/cpsassessment")
-# devtools::install_github("ss3sim/ss3sim")
-# https://github.com/peterkuriyama/cpsassessment/
+
+# pak::pkg_install("seananderson/ggsidekick")
+# pak::pkg_install("peterkuriyama/cpsassessment")
+# pak::pkg_install("r4ss/r4ss")
+# # devtools::install_github("https://github.com/r4ss/r4ss") 
+# pak::pkg_install("ss3sim/ss3sim")
+# pak::pkg_install("thomasp85/patchwork")
+
 library(ss3sim)
 setwd("C:/Users/peter.kuriyama/SynologyDrive/Research/noaa/forage_growth/")
 
 #----------------------------------------------------------------------
+#Plot uncorrected Menhaden age-length data
+men <- read.csv("data/menhaden_uncorrected_middle_length.csv")
+men <- men %>% melt(id.var = "Year")
+men$age <- as.numeric(gsub("X", "", men$variable))
+
+mins <- men %>% group_by(age) %>% mutate(minval = min(value), maxval = max(value), 
+                                    delta = maxval-minval) 
+
+
+ggplot(men, aes(x = age, y = value / 10)) + geom_point() + ylab("FL (cm)") +
+  ylim(c(0, 50)) + 
+  theme_sleek()
+
+#Corrected data
+biascorr <- read.csv("data/menhaden_biascorrected_oct15_length.csv")
+biascorr <- biascorr %>% melt(id.var = "Year") %>% 
+  mutate(age = as.numeric(gsub("X", "", variable)))
+biascorr %>% group_by(age) %>% mutate(minval = min(value), maxval = max(value), 
+                                      delta = maxval-minval) 
+
+biascorr %>% ggplot(aes(x = age, y = value / 10)) + 
+  geom_point() + ylab("FL (cm)") +
+  ylim(c(0, 50)) + 
+  theme_sleek()
+ggsave("figs/menhaden_biascorrected_oct15_length.jpg")
+
+#Can have variability of up to 10cm 
+#----------------------------------------------------------------------
+
 #Functions to pull selectivity parameters and growth estimates
 pull_ageselex <- function(input_list, ages = 0:10){
   temp <- lapply(input_list, FUN = function(xx){
@@ -286,6 +320,7 @@ scens <- scens %>% select(names(df), cf.ses.1)
 #For debugging
 # load_all("ss3sim")
 # load_all("r4ss")
+start_time <- Sys.time()
 iterations <- 5:12
 
 ncores <- 4
@@ -294,12 +329,18 @@ registerDoParallel(cl)
 
 scname <- run_ss3sim(iterations = iterations, simdf = scens, parallel = T,
                      parallel_iterations = TRUE)
+
+# scname <- run_ss3sim(iterations = iterations, simdf = scens, parallel = F,
+#                      parallel_iterations = F)
+
 # scname <- run_ss3sim(iterations = iterations, simdf = scens[-2, ], parallel = T,
 #                       parallel_iterations = TRUE)
 stopCluster(cl)
-
-
+end_time <- Sys.time() - start_time
+print(end_time)
 # scname <- run_ss3sim(iterations = 1, simdf = df[1, ])
+
+#1.6 hours
 
  # unlink(scname[1], recursive = T)
 #
@@ -310,7 +351,7 @@ stopCluster(cl)
 # folds <- c("results/OM1_EM1")
 folds <- scens$scenarios
 # folds <- c("results/OM2_EM2")
-iters <- iterations
+iters <- 1:12 #iterations
 mods <- c("om", "em")
 
 flz <- expand_grid(folds, iters, mods) %>% mutate(unq = paste(folds,
@@ -319,6 +360,8 @@ flz <- expand_grid(folds, iters, mods) %>% mutate(unq = paste(folds,
 
 #------------------------------------------------------
 ###Read in results in parallel
+start_time <- Sys.time()
+
 ncores <- 4
 cl <- makeCluster(ncores)
 registerDoParallel(cl)
@@ -327,6 +370,7 @@ reslist <- foreach::foreach(ii = flz, .packages = 'r4ss') %dopar%
   SS_output(ii, printstats = F, covar = F)
 stopCluster(cl)
 
+end_time <- Sys.time() - start_time
 names(reslist) <- flz
 
 
@@ -405,20 +449,54 @@ tsgrowth <- pull_growthseries(reslist)
 
 ####Summary biomass
 tsRE <- calc_re(tsres, colname = "Bio_smry")
-tsRE %>% group_by(scen, Yr, datscen, opmod, estmod) %>% summarize(lo = quantile(re, .05),
-                                                                  med = median(re), 
-                                                                  hi = quantile(re, .95))
+
+###Add in descriptions for the facets
+d1 <- tsRE %>% distinct(datscen) %>% mutate(dd = c("D0_high", "D1_noCAAL", "D2_Index_every_other",
+                                             "D3_fewer_ages"))
+tsRE <- tsRE %>% left_join(d1)
+
+e1 <- tsRE %>% distinct(estmod) %>% mutate(ee = c("EM1_tvSel", "EM2_tvGrowth", "EM3_tvSel_tvGrowth"))
+tsRE <- tsRE %>% left_join(e1)
+
+# tsRE %>% ggplot(aes(x = re)) + geom_histogram() + facet_grid(dd ~ ee)
 
 
-ggplot(tsRE, aes(x = Yr, y = re, group = iter )) + 
-  geom_line(alpha=  .5) + facet_grid(datscen ~ estmod, scales = "free_y") + 
-  xlab("Year") + 
-  ylim(c(-50, 50)) +
-  ylab("Relative Error Stock Biomass (age-1+)") 
+tsRE %>% group_by(scen, datscen, opmod, estmod, dd, ee)
 
+
+sumRE <- tsRE %>% group_by(scen, datscen, opmod, estmod, dd, ee) %>%
+  mutate(mare = abs(median(re))) %>% ungroup %>% group_by(scen, Yr, datscen, opmod, estmod, dd, ee) %>% 
+  summarize(lo = quantile(re, .05), med = median(re), hi = quantile(re, .95), mare = mare)
+
+
+sumRE <- sumRE %>% group_by(scen, datscen, opmod, estmod, dd, ee) %>%
+  mutate(mare = abs(median(re)))
+
+
+
+tsRE %>% filter(Yr <= 59) %>% ggplot(aes(x = Yr, y = re )) + 
+  geom_line(alpha = .5, aes(group =  iter)) + facet_grid(dd ~ ee, scales = "free_y") + 
+  xlab("Year") + geom_hline(aes(yintercept = 0)) +
+  # ylim(c(-50, 50)) +
+  ylab("Relative Error Stock Biomass (age-1+)") +
+  geom_line(data = sumRE %>% filter(Yr <= 59), 
+  aes(x = Yr, y = med), col = 'red', size = 1) + theme_sleek()
+
+ggsave(width = 7, height = 7, file = "figs/prelim_re_12iters.png")
+
+
+
+sumRE %>% ggplot(aes(x = Yr)) + geom_line(aes(y = med), col = 'red') +
+  geom_line(aes(y = lo), col = 'black', lty = 2) + 
+  geom_line(aes(y = hi), col = 'black', lty = 2) + 
+  facet_grid(datscen ~ estmod, scales = 'free_y') + theme_sleek()
+
+tsRE %>% 
 
 #------------------------------------------------------
-#Growths
+#Example selectivity plots
+
+
 
 
 

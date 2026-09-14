@@ -107,7 +107,7 @@ stopCluster(cl)
 end_time <- Sys.time() - start_time
 print(end_time) 
 
-#30 minutes for 50 iterations
+#4 hours for 100 iterations
 
 
 

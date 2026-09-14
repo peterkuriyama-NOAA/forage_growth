@@ -5,20 +5,20 @@
 #Startup
 # devtools::install_github("ss3sim/ss3models")
 # library("ss3models")
-#test
+
 options(max.print = 1000, device = 'windows')
 library(plyr)
 library(reshape2)
 library(tidyverse)
 library(r4ss)
-library(ggsidekick)
+# library(ggsidekick)
 library(devtools)
 library(doParallel)
 
 # library(ggridges)
 # library(scales)
 options(dplyr.summarise.inform = FALSE)
-library(patchwork)
+# library(patchwork)
 library(cpsassessment)
 
 
@@ -30,10 +30,19 @@ library(cpsassessment)
 # pak::pkg_install("thomasp85/patchwork")
 
 library(ss3sim)
-setwd("C:/Users/peter.kuriyama/SynologyDrive/Research/noaa/forage_growth/")
+
+#Local computer
+# setwd("C:/Users/peter.kuriyama/SynologyDrive/Research/noaa/forage_growth/")
+
+#FRD Scientist server 2
+setwd("C:/Users/FRDScientist/Peter/forage_growth/")
+
+source("forage_growth_functions.R")
 
 #----------------------------------------------------------------------
-#Plot uncorrected Menhaden age-length data
+#Can Skip this part, Plot uncorrected Menhaden age-length data
+#----------------------------------------------------------------------
+
 men <- read.csv("data/menhaden_uncorrected_middle_length.csv")
 men <- men %>% melt(id.var = "Year")
 men$age <- as.numeric(gsub("X", "", men$variable))
@@ -63,77 +72,77 @@ ggsave("figs/menhaden_biascorrected_oct15_length.jpg")
 #----------------------------------------------------------------------
 
 #Functions to pull selectivity parameters and growth estimates
-pull_ageselex <- function(input_list, ages = 0:10){
-  temp <- lapply(input_list, FUN = function(xx){
-    tt <- xx$ageselex %>% filter(Factor == "Asel") %>% 
-      select(Fleet, Yr, Seas, as.character(ages) )
-    tt <- tt %>% melt(id.var = c("Fleet", "Yr", "Seas"))
-    tt$age <- as.numeric(as.character(tt$variable))
-    tt <- tt %>% select(Fleet, Yr, Seas, age, value)
-    return(tt)
-  })
-  temp <- ldply(temp)
-  temp$model <- temp[, 1]
-  temp <- temp %>% select(Yr, Fleet, Seas, age, value, model)
-  return(temp)
-}
-
-pull_lenselex <- function(input_list){
-  temp <- lapply(input_list, FUN = function(xx){
-    tt <- xx$sizeselex %>% filter(Factor == "Lsel") %>% 
-      select(-Factor, -Sex, -Label)
-    tt <- tt %>% melt(id.var = c("Fleet", "Yr"))
-    tt$len <- as.numeric(as.character(tt$variable))
-    tt <- tt %>% select(Fleet, Yr, len, value)
-    return(tt)
-  })
-  temp <- ldply(temp)
-  temp$model <- temp[, 1]
-  temp <- temp %>% select(Yr, Fleet, len, value, model)
-  return(temp)
-}
-
-pull_growthseries <- function(input_list, ages = 0:10){
-  temp <- lapply(input_list, FUN = function(xx){
-    tt <- xx$growthseries %>%
-      select(Yr, Seas, as.character(ages) )
-    tt <- tt %>% melt(id.var = c("Yr", "Seas"))
-    tt$age <- as.numeric(as.character(tt$variable))
-    tt <- tt %>% select(Yr, Seas, age, value)
-    return(tt)
-  })
-  temp <- ldply(temp)
-  temp$model <- temp[, 1]
-  temp <- temp %>% select(Yr, Seas, age, value, model)
-  return(temp)
-}
-
-
-calc_re <- function(res, colname){ #Must have model column with file path
-  # temp <- ldply(strsplit(res$model, split = "/"))
-  # res$folder <- paste(temp$V1, temp$V2, sep = "/")
-  # res$iter <- temp$V3
-  # res$mod <- temp$V4
-  
-  res <- res[, c("Yr", colname, "model", "scenario", "iter", "mod")]
-  
-  omres <- res %>% filter(mod == "om") 
-  emres <- res %>% filter(mod == "em")
-  
-  if(length(colname) > 1) colname <- colname[which(colname != 'age')]
-  # colname <- 
-  # colname <- colname %>% fi
-  omres$om <- omres[, colname]
-  emres$em <- emres[, colname]
-  
-  omres <- omres[, -c(which(names(omres) %in% c(colname, 'mod')) )]
-  emres <- emres[, -c(which(names(emres) %in% c(colname, 'mod')) )]
-  
-  calc_res <- omres %>% left_join(emres)
-  calc_res <- calc_res %>% mutate(re = round(100 * (em - om) / om, digits = 3))
-  calc_res$value <- colname
-  return(calc_res)  
-}
+# pull_ageselex <- function(input_list, ages = 0:10){
+#   temp <- lapply(input_list, FUN = function(xx){
+#     tt <- xx$ageselex %>% filter(Factor == "Asel") %>% 
+#       select(Fleet, Yr, Seas, as.character(ages) )
+#     tt <- tt %>% melt(id.var = c("Fleet", "Yr", "Seas"))
+#     tt$age <- as.numeric(as.character(tt$variable))
+#     tt <- tt %>% select(Fleet, Yr, Seas, age, value)
+#     return(tt)
+#   })
+#   temp <- ldply(temp)
+#   temp$model <- temp[, 1]
+#   temp <- temp %>% select(Yr, Fleet, Seas, age, value, model)
+#   return(temp)
+# }
+# 
+# pull_lenselex <- function(input_list){
+#   temp <- lapply(input_list, FUN = function(xx){
+#     tt <- xx$sizeselex %>% filter(Factor == "Lsel") %>% 
+#       select(-Factor, -Sex, -Label)
+#     tt <- tt %>% melt(id.var = c("Fleet", "Yr"))
+#     tt$len <- as.numeric(as.character(tt$variable))
+#     tt <- tt %>% select(Fleet, Yr, len, value)
+#     return(tt)
+#   })
+#   temp <- ldply(temp)
+#   temp$model <- temp[, 1]
+#   temp <- temp %>% select(Yr, Fleet, len, value, model)
+#   return(temp)
+# }
+# 
+# pull_growthseries <- function(input_list, ages = 0:10){
+#   temp <- lapply(input_list, FUN = function(xx){
+#     tt <- xx$growthseries %>%
+#       select(Yr, Seas, as.character(ages) )
+#     tt <- tt %>% melt(id.var = c("Yr", "Seas"))
+#     tt$age <- as.numeric(as.character(tt$variable))
+#     tt <- tt %>% select(Yr, Seas, age, value)
+#     return(tt)
+#   })
+#   temp <- ldply(temp)
+#   temp$model <- temp[, 1]
+#   temp <- temp %>% select(Yr, Seas, age, value, model)
+#   return(temp)
+# }
+# 
+# 
+# calc_re <- function(res, colname){ #Must have model column with file path
+#   # temp <- ldply(strsplit(res$model, split = "/"))
+#   # res$folder <- paste(temp$V1, temp$V2, sep = "/")
+#   # res$iter <- temp$V3
+#   # res$mod <- temp$V4
+#   
+#   res <- res[, c("Yr", colname, "model", "scenario", "iter", "mod")]
+#   
+#   omres <- res %>% filter(mod == "om") 
+#   emres <- res %>% filter(mod == "em")
+#   
+#   if(length(colname) > 1) colname <- colname[which(colname != 'age')]
+#   # colname <- 
+#   # colname <- colname %>% fi
+#   omres$om <- omres[, colname]
+#   emres$em <- emres[, colname]
+#   
+#   omres <- omres[, -c(which(names(omres) %in% c(colname, 'mod')) )]
+#   emres <- emres[, -c(which(names(emres) %in% c(colname, 'mod')) )]
+#   
+#   calc_res <- omres %>% left_join(emres)
+#   calc_res <- calc_res %>% mutate(re = round(100 * (em - om) / om, digits = 3))
+#   calc_res$value <- colname
+#   return(calc_res)  
+# }
 
 #----------------------------------------------------------------------
 #Specify results directory
@@ -317,13 +326,15 @@ scens <- scens %>% select(names(df), cf.ses.1)
 
 #----------------Run the models
 
+scens <- scens[1,]
+
 #For debugging
 # load_all("ss3sim")
 # load_all("r4ss")
 start_time <- Sys.time()
-iterations <- 5:12
+iterations <- 1:48
 
-ncores <- 4
+ncores <- 48
 cl <- makeCluster(ncores)
 registerDoParallel(cl)
 

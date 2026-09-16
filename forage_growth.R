@@ -34,10 +34,16 @@ library(ss3sim)
 #Local computer
 # setwd("C:/Users/peter.kuriyama/SynologyDrive/Research/noaa/forage_growth/")
 
+
+ncores <- detectCores()
 #FRD Scientist server 2
-setwd("C:/Users/FRDScientist/Peter/forage_growth/")
+if(ncores > 50) setwd("C:/Users/FRDScientist/Peter/forage_growth/")
+
+#My laptop
+if(ncores < 50) setwd("Y:/My Drive/forage_growth/")
 
 source("forage_growth_functions.R")
+
 
 #----------------------------------------------------------------------
 #Can Skip this part, Plot uncorrected Menhaden age-length data

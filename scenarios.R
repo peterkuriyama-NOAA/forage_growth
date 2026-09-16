@@ -72,7 +72,7 @@ scens3$si.years.2 <- "seq(11, 60, by = 3)"
 scens3$si.sds_obs.2 <- "rep(.2, 17)"
 
 index_scens <- rbind(scens1, scens2, scens3)
-write.csv(index_scens, file = "models/index_scens.csv")
+# write.csv(index_scens, file = "models/index_scens.csv")
 #----------------------------------------------------------------------------
 #Modify index so that CV is density dependent
 
@@ -89,7 +89,7 @@ cv_scens$scenarios <- gsub("D13", "D23",cv_scens$scenarios)
 write.csv(cv_scens, file = "models/cv_scens.csv")
 
 #----------------------------------------------------------------------------
-#Composition scenarios
+#Composition scenarios - D31 to D36
 
 tempscen <- scens[1, ]
 tempscen$si.sds_obs.2 <- "rep(.2, 50)"
@@ -132,3 +132,62 @@ datscen4$em_dir <- gsub("EM11", "EM14", datscen4$em_dir)
 dat_scens <- rbind(datscen1, datscen2, datscen3, datscen4)
 write.csv(dat_scens, file = "models/dat_scens.csv")
 
+
+#----------------------------------------------------------------------------
+#Composition Year scenarios - D41 to D46
+
+#D41 is every 2 years
+d41 <- dat_scens %>% slice(grep("D31", scenarios))
+d41$scenarios <- gsub("D31", "D41", d41$scenarios)
+d41$sl.years.1 <- "seq(10, 60, by = 2)"
+d41$sl.years.2 <- "seq(10, 60, by = 2)"
+d41$sa.years.1 <- "seq(10, 60, by = 2)"
+d41$sa.years.2 <- "seq(10, 60, by = 2)"
+
+#D42, 50 every 3 years
+d42 <- d41
+d42$scenarios <- gsub("D41", "D42", d42$scenarios)
+d42$sl.years.1 <- "seq(10, 60, by = 3)"
+d42$sl.years.2 <- "seq(10, 60, by = 3)"
+d42$sa.years.1 <- "seq(10, 60, by = 3)"
+d42$sa.years.2 <- "seq(10, 60, by = 3)"
+
+#D43 fishery 10, survey 50, every 2 years
+d43 <- dat_scens %>% slice(grep("D33", scenarios))
+d43$scenarios <- gsub("D33", "D43", d43$scenarios)
+d43$sl.years.1 <- "seq(10, 60, by = 2)"
+d43$sl.years.2 <- "seq(10, 60, by = 2)"
+d43$sa.years.1 <- "seq(10, 60, by = 2)"
+d43$sa.years.2 <- "seq(10, 60, by = 2)"
+
+
+#D44 fishery 10, survey 50, every 3 years
+d44 <- d43
+d44$scenarios <- gsub("D43", "D44", d44$scenarios)
+d44$sl.years.1 <- "seq(10, 60, by = 3)"
+d44$sl.years.2 <- "seq(10, 60, by = 3)"
+d44$sa.years.1 <- "seq(10, 60, by = 3)"
+d44$sa.years.2 <- "seq(10, 60, by = 3)"
+
+#D45 fishery 50, survey 10, every 2 years
+d45 <- dat_scens %>% slice(grep("D35", scenarios))
+d45$scenarios <- gsub("D35", "D45", d45$scenarios)
+d45$sl.years.1 <- "seq(10, 60, by = 2)"
+d45$sl.years.2 <- "seq(10, 60, by = 2)"
+d45$sa.years.1 <- "seq(10, 60, by = 2)"
+d45$sa.years.2 <- "seq(10, 60, by = 2)"
+
+#D46 fishery 10, survey 50, every 3 years
+d46 <- d45
+d46$scenarios <- gsub("D45", "D46", d46$scenarios)
+d46$sl.years.1 <- "seq(10, 60, by = 3)"
+d46$sl.years.2 <- "seq(10, 60, by = 3)"
+d46$sa.years.1 <- "seq(10, 60, by = 3)"
+d46$sa.years.2 <- "seq(10, 60, by = 3)"
+
+
+compyear_scens <- rbind(d41, d42, d43, d44, d45, d46)
+
+write.csv(compyear_scens, file = "models/compyear_scens.csv", row.names = F)
+
+#----------------------------------------------------------------------------

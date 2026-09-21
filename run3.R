@@ -48,7 +48,7 @@ reslist <- foreach::foreach(ii = flz, .packages = "r4ss") %dopar%
 stopCluster(cl)
 end_time <- Sys.time() - start_time; end_time
 
-#100 iterations, 36 scenarios run took 6.4 minutes
+#100 iterations, 24 scenarios run took 5.4 minutes
 
 names(reslist) <- flz
 save(reslist, file = "results/D41toD46_EM11toEM14_reslist.Rdata")
@@ -56,20 +56,19 @@ save(reslist, file = "results/D41toD46_EM11toEM14_reslist.Rdata")
 #------------------------------------------------------
 #Process the results
 tsres <- pull_timeseries(reslist)
+save(tsres, file = "results/D41toD46_EM11toEM14_tsres.Rdata")
 
-save(tsres, file = "results/D31toD36_EM11toEM14_tsres.Rdata")
 
 tsRE <- calc_re(tsres, colname = "Bio_smry")
 
-
-datdesc <- data.frame(datscen = paste0("D", 31:36), 
-                      datdesc  =paste0("D", 31:36, "_F1_", 
+datdesc <- data.frame(datscen = paste0("D", 41:46), 
+                      datdesc  =paste0("D", 41:46, "_F1_", 
                                        datscen$sl.Nsamp.1, "_F2_", datscen$sl.Nsamp.2))
 datdesc <- datdesc %>% distinct(datscen, datdesc)
 tsRE <- tsRE %>% left_join(datdesc, by = 'datscen')  
 
 #Save the results
-save(tsRE, file = "results/D31toD36_EM11toEM14_tsRE.Rdata")
+save(tsRE, file = "results/D41toD46_EM11toEM14_tsRE.Rdata")
 
 
 
@@ -101,36 +100,3 @@ save(tsRE, file = "results/D31toD36_EM11toEM14_tsRE.Rdata")
 
 
 
-
-
-
-
-# 
-# tsRE %>% ggplot(aes(x = Yr, y = re, group = iter)) + geom_line() + geom_hline(yintercept = 0,  col = 'red') + 
-#   facet_grid(estmod ~ datdesc)
-# 
-# # dev.size()
-# # ggsave("figs/D31_D36_comp_effects.png", width = 11.1, height = 4)
-# 
-# 
-# 
-# ###Median values
-# tsREsumm <- tsRE %>% group_by(Yr, scen, datscen, datdesc, estmod) %>% summarize(lo10 = quantile(re, .1), mid = median(re),
-#                                                                                 hi90 = quantile(re, .9)) 
-# 
-# 
-# tsREsumm %>%
-#   ggplot(aes(x = Yr)) + geom_line(aes(y = lo10), lty = 2) + geom_line(aes(y = hi90), lty = 2) + 
-#   geom_line(aes(y = mid)) + facet_grid(datdesc ~ estmod) + 
-#   geom_hline(yintercept = 0,  col = "red") + ylab("Relative Error") + xlab("Year")
-# 
-# 
-# tsREsumm %>%
-#   ggplot(aes(x = Yr)) + 
-#   geom_line(aes(y = mid, group = estmod, color = estmod)) +
-#   geom_hline(yintercept = 0, lty = 2, col = "red") + ylab("Relative Error") + xlab("Year") + 
-#   facet_wrap(~ datdesc) 
-# 
-# 
-# 
-# 

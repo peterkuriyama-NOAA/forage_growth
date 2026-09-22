@@ -37,12 +37,18 @@ library(ss3sim)
 
 ncores <- detectCores()
 #FRD Scientist server 2
-if(ncores > 50) setwd("C:/Users/FRDScientist/Peter/forage_growth/")
+if(ncores > 50) {
+  setwd("C:/Users/FRDScientist/Peter/forage_growth/")
+  source("forage_growth_functions.R")
+}
 
 #My laptop
-if(ncores < 50) setwd("Y:/My Drive/forage_growth/")
+if(ncores < 50) {
+  setwd("Y:/My Drive/forage_growth/")
+  source("github/forage_growth/forage_growth_functions.R")
+}
 
-source("forage_growth_functions.R")
+
 
 
 #----------------------------------------------------------------------

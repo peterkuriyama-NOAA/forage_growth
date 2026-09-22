@@ -40,60 +40,60 @@ setwd("C:/Users/FRDScientist/Peter/forage_growth/")
 
 source("forage_growth_functions.R")
 #----------------------------------------------------------------------
-#Run define_template_scenarios
-source("define_template_scenarios.R")
-
-
-scens
-
-d0scens <- scens %>% slice(grep("D0", scenarios))
-
+# #Run define_template_scenarios
+# source("define_template_scenarios.R")
+# 
+# 
+# scens
+# 
+# d0scens <- scens %>% slice(grep("D0", scenarios))
+# 
+# 
+# #----------------------------------------------------------------------------
+# #####Define scenarios 
+# 
+# #D11 - annual index
+# scens1 <- scens %>% slice(grep("D0", scenarios))
+# scens1$scenarios <- paste0("results/D11_OM14_", "EM", 11:14)
+# scens1$em_dir <- paste0("models/", "EM", 11:14)
+# scens1$sc.Nsamp_ages.2 <- rep(100, 4)
+# scens1$si.sds_obs.2 <- "rep(.2, 50)"
+# 
+# #D12 - two year index
+# scens2 <- scens1
+# scens2$scenarios <- gsub("D11", "D12", scens2$scenarios)
+# scens2$si.years.2 <- "seq(11, 60, by = 2)"
+# scens2$si.sds_obs.2 <- "rep(.2, 25)"
+# 
+# #D13 - three year index
+# scens3 <- scens2
+# scens3$scenarios <- gsub("D12", "D13", scens3$scenarios)
+# scens3$si.years.2 <- "seq(11, 60, by = 3)"
+# scens3$si.sds_obs.2 <- "rep(.2, 17)"
+# 
+# index_scens <- rbind(scens1, scens2, scens3)
+# 
+# #----------------------------------------------------------------------------
+# #Modify index so that CV is density dependent
+# 
+# #D21-D23: Survey index CV mirrors F pattern
+# 
+# cv_scens <- index_scens
+# cv_scens[1:4, "si.sds_obs.2"] <- cv_scens[1:4, "cf.fvals.1"]
+# cv_scens[5:8, "si.sds_obs.2"] <- rep("c(seq(.02, .4, length = 12), rev(seq(.02, .4, length = 13)))", 4)
+# cv_scens[9:12, "si.sds_obs.2"] <- rep("c(seq(.02, .4, length = 9), rev(seq(.02, .4, length = 8)))", 4)
+# 
+# cv_scens$scenarios <- gsub("D11", "D21",cv_scens$scenarios)
+# cv_scens$scenarios <- gsub("D12", "D22",cv_scens$scenarios)
+# cv_scens$scenarios <- gsub("D13", "D23",cv_scens$scenarios)
+# 
+# 
+# #Combine the index and cv scenarios
+# run1_scens <- rbind(index_scens, cv_scens)
 
 #----------------------------------------------------------------------------
-#####Define scenarios 
 
-#D11 - annual index
-scens1 <- scens %>% slice(grep("D0", scenarios))
-scens1$scenarios <- paste0("results/D11_OM14_", "EM", 11:14)
-scens1$em_dir <- paste0("models/", "EM", 11:14)
-scens1$sc.Nsamp_ages.2 <- rep(100, 4)
-scens1$si.sds_obs.2 <- "rep(.2, 50)"
-
-#D12 - two year index
-scens2 <- scens1
-scens2$scenarios <- gsub("D11", "D12", scens2$scenarios)
-scens2$si.years.2 <- "seq(11, 60, by = 2)"
-scens2$si.sds_obs.2 <- "rep(.2, 25)"
-
-#D13 - three year index
-scens3 <- scens2
-scens3$scenarios <- gsub("D12", "D13", scens3$scenarios)
-scens3$si.years.2 <- "seq(11, 60, by = 3)"
-scens3$si.sds_obs.2 <- "rep(.2, 17)"
-
-index_scens <- rbind(scens1, scens2, scens3)
-
-#----------------------------------------------------------------------------
-#Modify index so that CV is density dependent
-
-#D21-D23: Survey index CV mirrors F pattern
-
-cv_scens <- index_scens
-cv_scens[1:4, "si.sds_obs.2"] <- cv_scens[1:4, "cf.fvals.1"]
-cv_scens[5:8, "si.sds_obs.2"] <- rep("c(seq(.02, .4, length = 12), rev(seq(.02, .4, length = 13)))", 4)
-cv_scens[9:12, "si.sds_obs.2"] <- rep("c(seq(.02, .4, length = 9), rev(seq(.02, .4, length = 8)))", 4)
-
-cv_scens$scenarios <- gsub("D11", "D21",cv_scens$scenarios)
-cv_scens$scenarios <- gsub("D12", "D22",cv_scens$scenarios)
-cv_scens$scenarios <- gsub("D13", "D23",cv_scens$scenarios)
-
-
-
-#----------------------------------------------------------------------------
-#Combine the index and cv scenarios
-run1_scens <- rbind(index_scens, cv_scens)
-
-
+run1_scens <- read.csv("models/run1_scens.csv")
 #Run models
 iters <- 1:100
 ncores <- 100
@@ -119,6 +119,8 @@ folds <- list.files("results")[grep(paste0("D", c(11:13, 21:23), collapse ="|"),
 folds <- paste0("results/", folds)
 
 folds <- folds[grep("EM11|EM12|EM13|EM14", folds)]
+folds <- folds[-grep("Rdata", folds)]
+
 
 mods <- c("om", "em")
 flz <- expand_grid(folds, iters, mods) %>% mutate(unq = paste(folds,

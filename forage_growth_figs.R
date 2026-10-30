@@ -96,32 +96,222 @@ tsRE_med <- tsRE %>% group_by(scen, Yr, datscen, opmod, estmod, estmod_desc, ind
   summarize(lo5 = quantile(re, .05), median_re = median(re), hi95 = quantile(re, .95))
 
 #--------------------------------------------------
-#Plots of median and 90% percentiles for each scenario
+#Plots of median and 90% percentiles for each scenario###Relative error of age 1+ biomass
 #--------------------------------------------------
-dscen_key %>% filter(datscen %in% c("D11", "D12", "D13"))
 
-# dscen_key[grep("year 1", dscen_key$index), ]
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp)
 
-dscen_key %>% filter(datscen %in% c("D11", "D12", "D13"))
-
+###D11, D31, D36
 ###Annual index with decreasing samples of length and age comps
-
 tsRE_med %>% filter(datscen %in% c("D11", "D31", "D36"))  %>%
-  mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
-  ggplot(aes(x = Yr, group = datscen,
-             color = datscen, fill = datscen)) + 
+  mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36")), lencomp = factor(lencomp)) %>%
+  ggplot(aes(x = Yr, group = lencomp,
+             color = lencomp, fill = lencomp)) + 
   geom_line(aes(y = median_re)) + 
   geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
   geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
-  facet_wrap(~ estmod) + geom_hline(aes(yintercept = 0), lty = 2)
+  facet_wrap(~ estmod_desc) + geom_hline(aes(yintercept = 0), lty = 2) + 
+  theme(legend.position = c(.5, .5))
 
-tsRE_med %>% filter(datscen %in% c("D11", "D31", "D36"))  %>%mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+
+
+
+tsRE_med %>% filter(datscen %in% c("D11", "D31", "D36"))  %>% mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
   ggplot(aes(x = Yr, group = datscen,
              color = datscen, fill = datscen)) + 
   geom_line(aes(y = median_re)) + 
   geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
   geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
-  facet_grid(datscen + agecomp + lencomp ~ estmod) + geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+  facet_grid(datscen + agecomp + lencomp ~ estmod + estmod_desc) + geom_hline(aes(yintercept = 0), lty = 2) + 
+  ylab("Relative Error Summary biomass (age-1+)") + xlab("Year") +
+  theme(legend.position = 'none')
+ggsave(filename = "figs/sep2026/decreasing_ncomp.png", width = 10, height = 10)
+
+
+
+#----------------
+###Index year with density-dependent CVs, and high comp sample sizes
+#----------------
+
+# Y:\My Drive\forage_growth\figs\sep2026
+
+tsRE_med %>% filter(datscen %in% c("D11", "D21", "D22", "D23")) %>% 
+  ungroup %>% 
+  distinct(datscen, lencomp, agecomp)
+
+tsRE_med %>% filter(datscen %in% c("D11", "D21", "D22", "D23"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + index ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none') + 
+  ylim(c(-50, 50))
+ggsave(filename = "figs/sep2026/density_dependent_indexcv.png", width = 10, height = 10)
+
+
+#----------------
+###Modify the fishery comp sample sizes
+#----------------
+tsRE_med %>% filter(datscen %in% c("D31", "D32", "D33"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+#----------------
+###Modify the survey comp sample sizes
+#----------------
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp) %>% 
+  slice(grep("F1_n50", lencomp))
+
+
+tsRE_med %>% filter(datscen %in% c("D31", "D34", "D35"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D31", "D34", "D33"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+
+#----------------
+###Frequency of size composition sampling with 50 samples
+#----------------
+tsRE_med %>% filter(datscen %in% c("D31","D41", "D42"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+
+#----------------
+###Frequency of size composition sampling with 50 samples for fishery and survey
+#----------------
+tsRE_med %>% filter(datscen %in% c("D33","D43", "D44"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+
+#----------------
+###Frequency of size composition sampling with 10 samples for fishery, 50 samples for survey
+#----------------
+tsRE_med %>% filter(datscen %in% c("D33","D43", "D44"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+tsRE_med %>% filter(datscen %in% c("D33", "D43", "D44"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = lencomp,
+             color = lencomp, fill = lencomp)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_wrap(~ estmod) + geom_hline(aes(yintercept = 0), lty = 2) + 
+  theme(legend.position = c(.5, .5))
+
+
+#----------------
+###Frequency of size composition sampling with 50 samples for fishery, 10 samples for survey
+#----------------
+tsRE_med %>% filter(datscen %in% c("D35","D45", "D46"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + lencomp + agecomp ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none')
+
+
+
+tsRE_med %>% filter(datscen %in% c("D35","D45", "D46"))  %>%
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = lencomp,
+             color = lencomp, fill = lencomp)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_wrap(~ estmod) + geom_hline(aes(yintercept = 0), lty = 2) + 
+  theme(legend.position = c(.5, .5))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp) %>% 
+  slice(grep("years_3", lencomp))
+
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp) %>% 
+  slice(grep("years_1", lencomp))
+
+#D41, D43, D45
+#D42, D44, D46
+#D31, D35
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp)
+
+tsRE_med %>% filter(datscen %in% c("D41", "D43", "D45", "D42", "D44", "D46")) %>% 
+  ungroup %>% distinct(datscen, index, lencomp, agecomp)
+
+
+
+
+tsRE_med %>% ungroup %>% distinct(datscen, index, lencomp, agecomp) %>% 
+  slice(grep("F2_n50", lencomp))
+
+
+
+
+
+
+
 
 
 

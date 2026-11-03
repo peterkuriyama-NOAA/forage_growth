@@ -1,6 +1,52 @@
 #------------------------------------------------------------------------
+#Source the forage_growth.R script before
+
 #Read in results
-options(max.print = 100)
+
+
+#-------------------------------------------------------------------------------------------------------------
+#D
+load("results_sep2026/D411toD466_EM11toEM14_tsRE.Rdata")
+dir41tsRE <- tsRE
+
+# outlier <- dir41tsRE %>% group_by(datscen, estmod, iter) %>% summarize(mean_re = mean(re))
+# 
+# outlier %>% arrange(desc(abs(mean_re)))
+# 
+# 
+# #Filter out outliers
+# dir41tsRE_med <- dir41tsRE %>% group_by(datscen, opmod, estmod, Yr) %>% summarize(mean_re = mean(re),
+#                                                                  median_re = median(re),
+#                                                                  q90 = quantile(re, prob = .9),
+#                                                                  q10 = quantile(re, prob = .1))
+# 
+# 
+# dir41tsRE_med %>% ggplot(aes(x = Yr, y = mean_re, color = datscen)) + facet_wrap( ~ estmod ) + 
+#   geom_line() + geom_hline(aes(yintercept = 0), lty = 2) 
+# 
+# 
+# #How often would management be correct
+# #OM closure
+# closures <- dir41tsRE
+# closures$om_closed <- FALSE
+# closures[which(closures$om < 150000), "om_closed"] <- "TRUE"
+# closures$em_closed <- FALSE
+# closures[which(closures$em < 150000), "em_closed"] <- "TRUE"
+# 
+# closures$false_closure <- FALSE
+# 
+# closures[which(closures$em_closed != closures$om_closed &
+#                  closures$om_closed == T), "false_closure"] <- TRUE
+# 
+# closures %>% group_by(datscen, estmod) %>% summarize(nfalse = sum(false_closure)) %>%
+#   dcast(datscen~ estmod, value.var = "nfalse")
+# 
+# #Look at the years between 30 and 40 where EMs seem to have the highest RE
+# 
+# 
+# dir41tsRE %>% ggplot(aes(x = Yr, y = re, group = iter)) + 
+#   geom_line() + facet_grid(datscen ~ estmod) + ylim(-50, 50)
+# 
 
 #-------------------------------------------------------------------------------------------------------------
 #D31 to D36 results for EM11 to EM14
@@ -25,7 +71,9 @@ d41tsRE <- tsRE
 #--------------------------------------------------
 
 #Load the scenario descriptions
-tsRE <- rbind(d11tsRE, d31tsRE %>% select(-datdesc), d41tsRE %>% select(-datdesc))
+tsRE <- rbind(dir41tsRE, d11tsRE, d31tsRE %>% select(-datdesc), d41tsRE %>% select(-datdesc))
+
+
 
 #EM descriptions
 emdesc <- tsRE %>% distinct(estmod) %>% mutate(estmod_desc = c("Cons growth; Cons sel",
@@ -80,7 +128,17 @@ dd$agecomp <- paste0(a1, "; ", a2)
 
 dscen_key <- dd %>% distinct(datscen, index, lencomp, agecomp)
 
+###Format the D41 scenarios with dirichlet cpar of 2 (2x SD in the comps)
+dir_key <- dscen_key[grep("D4", dscen_key$datscen), ]
+dir_key$datscen <- c("D411", "D422", "D433", "D444", "D455", "D466")
+dir_key$lencomp <- paste0(dir_key$lencomp, "_dir2")
+dir_key$agecomp <- paste0(dir_key$agecomp, "_dir2")
+
+dscen_key <- rbind(dscen_key, dir_key)
+
 #Add in to all the 
+tsRE[which(tsRE$datscen == "D4111" ), "datscen"] <- "D411"
+
 
 tsRE <- tsRE %>% left_join(emdesc, by = 'estmod') %>%
   left_join(dscen_key, by = 'datscen')
@@ -266,6 +324,75 @@ tsRE_med %>% filter(datscen %in% c("D35","D45", "D46"))  %>%
   theme(legend.position = c(.5, .5))
 
 
+
+#--------------------------------
+###Dirichlet comps, cpar = 2
+#--------------------------------
+
+# Y:\My Drive\forage_growth\figs\sep2026
+
+tsRE_med %>% filter(datscen %in% c("D411", "D422", "D433", "D444", "D455",
+                                   "D466")) %>% 
+  ungroup %>% 
+  distinct(datscen, lencomp, agecomp)
+
+tsRE_med %>% filter(datscen %in% c("D411", "D422", "D433", "D444", "D455",
+                                   "D466")) %>% 
+  # mutate(datscen = factor(datscen, levels = c("D11", "D31", "D36"))) %>%
+  ggplot(aes(x = Yr, group = datscen,
+             color = datscen, fill = datscen)) + 
+  geom_line(aes(y = median_re)) + 
+  geom_ribbon(aes(ymin = median_re, ymax = lo5), lty = 1, alpha = .2) + 
+  geom_ribbon(aes(ymin = median_re, ymax = hi95), lty = 1, alpha = .2) + 
+  facet_grid(datscen + index ~ estmod + estmod_desc) + 
+  geom_hline(aes(yintercept = 0), lty = 2) + theme(legend.position = 'none') + 
+  ylim(c(-50, 175))
+
+
+#-------------
+#Compare the sampled age comps between the dirichlet sampling and the OM
+#-------------
+load("results_sep2026/D411toD466_EM11toEM14_reslist.Rdata")
+
+names(reslist)[[1:2]]
+temp <- reslist[1:2]
+
+temp1 <- temp[[1]]
+temp1$agedbase
+
+
+
+temp2 <- temp[[2]]
+temp2$agedbase 
+
+SS_plots(temp2, dir = "results_sep2026/EMplots" )
+
+
+#Compare the OM and EM age comps in an example
+temp1$agedbase$model <- "OM"
+temp1$agedbase$value <- temp1$agedbase$Exp
+
+temp2$agedbase$model <- "EM"
+temp2$agedbase$value <- temp2$agedbase$Obs
+
+#Exploitation Rate
+temp2$exploitation
+temp2$catch %>% select(Fleet, Yr, F)
+
+agecomps <- rbind(temp1$agedbase, temp2$agedbase)
+
+
+agecomps %>% filter(Yr == 22, Fleet == 1)
+
+agecomps %>% filter(Yr <= 25, Fleet == 1) %>% 
+  ggplot(aes(x = Bin, y = value, group = model, color = model)) + geom_line() + 
+  facet_wrap(~Yr)
+
+agecomps %>% filter(Yr <= 25, Fleet == 2) %>% 
+  ggplot(aes(x = Bin, y = value, group = model, color = model)) + geom_line() + 
+  facet_wrap(~Yr)
+
+# ggsave(filename = "figs/sep2026/density_dependent_indexcv.png", width = 10, height = 10)
 
 
 

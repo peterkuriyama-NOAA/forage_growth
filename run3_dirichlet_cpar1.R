@@ -128,7 +128,7 @@ omem_res <- foreach::foreach(ii = omem_files, .packages = "r4ss") %dopar%
 stopCluster(cl)
 end_time <- Sys.time() - start_time; end_time
 
-
+names(omem_res) <- omem_files
 save(omem_res, file = "results/omem_res.Rdata" )
 
 
